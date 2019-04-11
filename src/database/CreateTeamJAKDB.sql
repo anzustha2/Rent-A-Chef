@@ -28,8 +28,89 @@ CREATE TABLE JAK_User(
     userPassword VARCHAR(255) NOT NULL,
     userStatusCode VARCHAR(10) NOT NULL DEFAULT 'ACV',
     unblockDate DATETIME NULL,
+    firstName VARCHAR(50) NOT NULL,
+    lastName VARCHAR(50) NOT NULL,
+    phoneNo VARCHAR(15) NOT NULL,
+    email VARCHAR(50) NOT NULL,
     CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('USR_Type',userTypeCode)),
     CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('USR_Status',userStatusCode))
+);
+
+# Create the table for user address
+CREATE TABLE JAK_Address(
+	addressId BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
+    userId BIGINT,
+	address1 VARCHAR(200) NOT NULL,
+    address2 VARCHAR(50) NOT NULL,
+    city VARCHAR(15) NOT NULL,
+    state VARCHAR(15) NOT NULL,
+    zip VARCHAR(15) NOT NULL,
+    addressTypeCode VARCHAR(10) NOT NULL,
+    FOREIGN KEY (userId) REFERENCES JAK_User(userId),
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Address_Type',addressTypeCode))
+);
+
+# Create table for Ingredient
+CREATE TABLE JAK_Ingredient(
+	ingredientId BIGINT PRIMARY KEY NOT NULL,
+    ingredientName VARCHAR(50) NOT NULL,
+    description VARCHAR (500),
+    imagePath VARCHAR(100),
+    videoPath VARCHAR(100)
+);
+# Create table for Dish
+CREATE TABLE JAK_Dish(
+	dishId BIGINT PRIMARY KEY NOT NULL,
+    dishName VARCHAR(50) NOT NULL,
+    description VARCHAR (500),
+    cuisineTypeCode VARCHAR(50) DEFAULT 'ALL',
+    imagePath VARCHAR(100),
+    videoPath VARCHAR(100),
+    estCost DOUBLE,
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Cuisine_Type',cuisineTypeCode))
+);
+
+# Create table for the recipe
+CREATE TABLE JAK_Recipe(
+	dishId BIGINT NOT NULL,
+    ingredientId BIGINT NOT NULL,
+    unitTypeCode VARCHAR(20),
+    units DOUBLE,
+    PRIMARY KEY (dishId, ingredientId),
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Unit_Type',unitTypeCode)
+));
+
+# Create table for the orders
+CREATE TABLE JAK_Order(
+	orderId BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT,
+    userId BIGINT NOT NULL,
+    chefId BIGINT,
+    createdTimestamp DATETIME DEFAULT NOW(),
+    expireDateTime DATETIME,
+    scheduledDateTime DATETIME,
+    scheduledAddressId BIGINT,
+    completionDateTime DATETIME,
+    pickedUpDateTime DATETIME,
+    orderStatusCode VARCHAR(20) DEFAULT 'OP',
+    estCostWithoutTax DOUBLE DEFAULT 0.0,
+    estTax DOUBLE DEFAULT 0.0,
+    actualAmountWithoutTax DOUBLE,
+    actualTax DOUBLE,
+    FOREIGN KEY (userId) REFERENCES JAK_User(userId),
+    FOREIGN KEY (chefId) REFERENCES JAK_User(userId),
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Order_Status',orderStatusCode))
+);
+# Create table for the orders
+CREATE TABLE JAK_OrderItem(
+	orderId BIGINT,
+    dishId BIGINT,
+    unitTypeCode VARCHAR (50),
+    units DOUBLE,
+    estCostWithoutTax DOUBLE,
+    estTax DOUBLE,
+    FOREIGN KEY (orderId) REFERENCES JAK_Order(orderId),
+    FOREIGN KEY (dishId) REFERENCES JAK_Dish(dishId),
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Unit_Type',unitTypeCode))
 );
 
 DELIMITER ;
@@ -67,12 +148,152 @@ BEGIN
 		u.userStatusCode,
         u.unblockDate,
 		(u.userPassword <> SHA(userPassword)) as 'IsIncorrectPassword',
-        scl.Description as 'StatusDescription'
+        scl.Description as 'StatusDescription',
+        firstName,
+        lastName,
+        email,
+        phoneNo
 	FROM JAK_User u 
     INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='USR_Status' AND scl.Code=u.userStatusCode 
 	WHERE u.userName = userName;
 END $$
 
+#This stored procedure will return the address for the given userId
+# we could have multiple address for same user.
+CREATE PROCEDURE JAK_SP_GetUserAddress(
+	IN userId BIGINT
+)
+BEGIN 
+	SELECT 
+		a.addressId,
+        a.userId,
+		a.address1,
+		a.address2,
+		a.city,
+		a.state,
+		a.zip,
+		a.addressTypeCode,
+        scl.Description AS 'AddressDescription'
+    FROM JAK_Address a
+    INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Address_Type' AND scl.Code=a.addressTypeCode
+    WHERE a.userId= userId;
+END $$
+
+#This stored procedure will return the address for the given addressId
+CREATE PROCEDURE JAK_SP_GetAddress(
+	IN addressId BIGINT
+)
+BEGIN 
+	SELECT 
+		a.addressId,
+        a.userId,
+		a.address1,
+		a.address2,
+		a.city,
+		a.state,
+		a.zip,
+		a.addressTypeCode,
+        scl.Description AS 'AddressDescription'
+    FROM JAK_Address a
+    INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Address_Type' AND scl.Code=a.addressTypeCode
+    WHERE a.addressId= addressId;
+END $$
+
+CREATE PROCEDURE JAK_SP_GetDishes(
+	IN cuisineTypeCode VARCHAR(50)
+)
+BEGIN
+	SELECT
+		d.dishId,
+		d.dishName,
+		d.description,
+		d.cuisineTypeCode,
+		d.imagePath,
+		d.videoPath,
+        d.estCost,
+        scl.Description as 'Cuisine'
+    FROM JAK_Dish d
+    INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Cuisine_Type' AND scl.Code=d.cuisineTypeCode
+    WHERE d.cuisineTypeCode=cuisineTypeCode OR cuisineTypeCode='ALL' OR d.cuisineTypeCode='ALL';
+END $$
+
+CREATE PROCEDURE JAK_SP_GetDishIngredients(
+	IN dishId BIGINT
+)
+BEGIN 
+	SELECT
+		i.ingredientId,
+		i.ingredientName,
+		i.description,
+		i.imagePath,
+		i.videoPath,
+        r.unitTypeCode,
+        r.units,
+        scl.Description as 'UnitType'
+	FROM JAK_Recipe r
+    INNER JOIN JAK_Dish d ON d.dishId = r.dishId
+    INNER JOIN JAK_Ingredient i ON i.ingredientId = r.ingredientId
+    INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Unit_Type' AND scl.Code=r.unitTypeCode
+    WHERE r.dishId = dishId;
+END $$
+   
+CREATE PROCEDURE JAK_SP_CreateOrder(
+	IN userIdIn BIGINT,
+    IN scheduledAddressIdIn BIGINT,
+    IN expireDateTimeIn DATETIME,
+    IN scheduledDateTimeIn DATETIME
+)
+BEGIN
+	INSERT INTO JAK_Order (userId, expireDateTime, scheduledAddressId, scheduledDateTime)
+    VALUES (userIdIn, expireDateTimeIn, scheduledAddressIdIn, scheduledDateTimeIn);
+    	
+	SELECT  LAST_INSERT_ID();
+END $$
+
+# Create table for the orders
+
+CREATE PROCEDURE JAK_SP_AddOrderItem(
+	orderIdIn BIGINT,
+    dishIdIn BIGINT,
+    unitTypeCodeIn VARCHAR (50),
+    unitsIn DOUBLE,
+    estCostWithoutTaxIn DOUBLE,
+    estTaxIn DOUBLE
+)
+BEGIN
+	INSERT INTO JAK_OrderItem (orderId, dishId, unitTypeCode, units, estCostWithoutTax, estTax)
+    VALUES (orderIdIn, dishIdIn, unitTypeCodeIn, unitsIn, estCostWithoutTaxIn, estTaxIn);
+    
+    UPDATE JAK_Order
+    SET estCostWithoutTax = estCostWithoutTax + estCostWithoutTaxIn,
+		estTax = estTax+ estTaxIn
+	WHERE orderId = orderIdIn;
+END $$
+
+CREATE PROCEDURE JAK_SP_updateOrderItem(
+	orderIdIn BIGINT,
+    dishIdIn BIGINT,
+    unitTypeCodeIn VARCHAR (50),
+    unitsIn DOUBLE,
+    estCostWithoutTaxIn DOUBLE,
+    estTaxIn DOUBLE
+)
+BEGIN
+	SELECT estCostWithoutTax,estTax INTO @oldEstCost,@oldEstTax
+    FROM JAK_OrderItem
+    WHERE orderId=orderIdIn AND dishId=dishIdIn;
+    
+	UPDATE JAK_OrderItem 
+    SET unitTypeCode=unitTypeCodeIn, 
+		units=unitsIn,
+        estCostWithoutTax=estCostWithoutTaxIn, 
+        estTax=estTaxIn
+        WHERE orderId=orderIdin AND dishId=dishIdIn;
+    UPDATE JAK_Order
+    SET estCostWithoutTax = estCostWithoutTax + estCostWithoutTaxIn - @oldEstCost,
+		estTax = estTax+ estTaxIn - @oldEstTax
+	WHERE orderId = orderIdIn;
+END $$
 
 DELIMITER ;
 ##############################################################################################################################################
@@ -91,44 +312,110 @@ VALUES
  ('USR_Status','ACV', 'Active.' ),
  ('USR_Status','DISB','Disabled.'),
  ('USR_Status','PBLOCK','Permanently Blocked.'),
- ('USR_Status','TBLOCK','Temporarily Blocked.');
+ ('USR_Status','TBLOCK','Temporarily Blocked.'),
+-- address type codes
+ ('Address_Type','BUS', 'Business'),
+ ('Address_Type','APT', 'Appartment'),
+ ('Address_Type','HOUSE', 'House'),
+ ('Address_Type','OT', 'Other'),
+-- cuisine type codes
+ ('Cuisine_Type','ALL', 'All'),
+ ('Cuisine_Type','IND', 'Indian'),
+ ('Cuisine_Type','NEP', 'Nepali'),
+-- unit type codes
+ ('Unit_Type', 'TSP','Table Spoon'),
+ ('Unit_Type', 'gm','gram'),
+ ('Unit_Type', 'SP','Spoon'),
+ ('Unit_Type', 'mg','milligram'),
+ ('Unit_Type','oz', 'Ounce'),
+-- Order status
+ ('Order_Status','OP', 'Open'),
+ ('Order_Status','EXP','Expired'),
+ ('Order_Status','COMP','Completed'),
+ ('Order_Status','INV','Invalid'),
+ ('Order_Status','IP','In-Progress')
+ ;
  
 # Create some users now
-INSERT INTO JAK_User ( userName, userTypeCode, userStatusCode, userPassword)
+INSERT INTO JAK_User ( userName, userTypeCode, userStatusCode, userPassword, firstName, lastName, email, phoneNo)
 VALUES
 -- create some admin users
-('admin','ADMIN','ACV',SHA('admin')),
-('admin1','ADMIN','ACV',SHA('admin1')),
-('admin2','ADMIN','ACV',SHA('admin2')),
-('admin3','ADMIN','ACV',SHA('admin3')),
+('admin','ADMIN','ACV',SHA('admin'), 'Maggie','Sargent',"sem.ut.cursus@eu.com","928-791-1624"),
+('admin1','ADMIN','ACV',SHA('admin1'),'Troy','Burch','imperdiet@leo.com','137-479-9803'),
+('admin2','ADMIN','ACV',SHA('admin2'),'Gwendolyn','Lambert','ut.dolor.dapibus@Innecorci.com','770-238-2794'),
 -- create some chef users
-('chef','CHEF','ACV',SHA('chef')),
-('chef1','CHEF','ACV',SHA('chef1')),
-('chef2','CHEF','ACV',SHA('chef2')),
-('chef3','CHEF','ACV',SHA('chef3')),
-('chef4','CHEF','ACV',SHA('chef4')),
-('chef5','CHEF','ACV',SHA('chef5')),
-('chef6','CHEF','ACV',SHA('chef6')),
-('chef7','CHEF','ACV',SHA('chef7')),
-('chef8','CHEF','ACV',SHA('chef8')),
-('chef9','CHEF','ACV',SHA('chef9')),
+('chef','CHEF','ACV',SHA('chef'),'Roanna','Norton','tincidunt.dui.augue@Innec.net','129-906-6862'),
+('chef1','CHEF','ACV',SHA('chef1'),'Colt','Jacobs','tortor.Nunc@tempordiam.co.uk','594-879-0217'),
+('chef2','CHEF','ACV',SHA('chef2'),'Maggie','Sargent','sem.ut.cursus@eu.com','928-791-1624'),
+
 -- create some consumer users
-('user','USR','ACV',SHA('user')),
-('user1','USR','ACV',SHA('user1')),
-('user2','USR','ACV',SHA('user2')),
-('user3','USR','ACV',SHA('user3')),
-('user4','USR','ACV',SHA('user4')),
-('user5','USR','ACV',SHA('user5')),
-('user6','USR','ACV',SHA('user6')),
-('user7','USR','ACV',SHA('user7')),
-('user8','USR','ACV',SHA('user8')),
-('user9','USR','ACV',SHA('user9'));
+('user','USR','ACV',SHA('user'),'Alfreda','Johns','lorem.ut.aliquam@inaliquet.com','957-798-7904'),
+('user1','USR','ACV',SHA('user1'),'Morgan','Padilla','Duis.cursus@pedesagittis.co.uk','351-937-7795'),
+('user2','USR','ACV',SHA('user2'),'Chantale','Frank','odio.tristique@tempus.co.uk','919-128-0324');
+
+# Add some addresses for the users
+INSERT INTO JAK_ADDRESS(userId, address1, address2, city, state, zip, addressTypeCode)
+VALUES (1, '1 N State St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(2, '10 N State St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(3, '11 N State St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(4, '21 N State St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(5, '5800 N Clark St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(6, '800 N Halstead St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(7, '2100 W Peterson St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(8, '1400 W Foster St', 'APT 202', 'Chicago','IL', '60660','APT'),
+(9, '1200 N Racine St', 'APT 202', 'Chicago','IL', '60660','APT');
+
+# Add some ingredients
+INSERT INTO JAK_Ingredient(ingredientId,ingredientName,description,imagePath,videoPath)
+VALUES(1,'Sugar', 'Sweet powder made out of sugarcane liquid', 'sugar.png',''),
+(2,'Salt', 'Salt powder Sodium Chloride: NaCl', 'salt.png',''),
+(3,'Tealeaf', 'Tea leafs powder', 'tea.png',''),
+(4,'Water','Natural clean water','water.png',''),
+(5,'Milk','Whole milk','wholeMilk.png',''),
+(6,'Black Pepper','spicy black pepper','blackPepper.png','');
+
+#Add some dishes
+INSERT INTO JAK_Dish(dishId,dishName, description, cuisineTypeCode, imagePath, videoPath, estCost)
+VALUES(1,'Red tea','hot sweet red tea','ALL','redtea.png','https://www.youtube.com/watch?v=GWUkMHUUOVQ',2.50),
+(2,'Masala tea','hot sweet tea with milk','IND','masalaTea.png','https://www.youtube.com/watch?v=6qU5FkbXob8',2.75),
+(3,'Mountain tea','hot sweet tea with milk and black pepper','NEP','mountainTea.png','',3.00);
+
+
+#Create recipe for the dishes
+INSERT INTO JAK_Recipe(dishId,ingredientId,unitTypeCode,units)
+VALUES
+-- red tea
+(1, 1, 'sp', 1),
+(1,3,'sp',0.5),
+(1,4,'oz',24),
+-- masala tea
+(2, 1, 'sp', 1),
+(2,3,'sp',0.5),
+(2,4,'oz',16),
+(2,5,'oz',8),
+-- mountain tea
+(3, 1, 'sp', 1),
+(3,3,'sp',0.5),
+(3,4,'oz',16),
+(3,5,'oz',8),
+(3,6,'sp',0.25);
+
 
 ##############################################################################################################################################
-#########################################################       Test login        ###########################################################
+#########################################################       Test        ###########################################################
 ##############################################################################################################################################
 # admin login
 CALL JAK_SP_ProcessLogin('admin','admin');
+CALL JAK_SP_GetUserAddress(1);
+CALL JAK_SP_GetAddress(9);
+CALL JAK_SP_GetDishes('IND');
+CALL JAK_SP_GetDishes('ALL');
+CALL JAK_SP_GetDishIngredients(3);
+CALL JAK_SP_CreateOrder(7,7,NOW()+INTERVAL 1 DAY,NOW()+ INTERVAL 6 HOUR);
+CALL JAK_SP_AddOrderItem(1, 1,'oz',240,25,2.5);
+CALL JAK_SP_AddOrderItem(1, 2,'oz',240,27.5,2.75);
+CALL JAK_SP_updateOrderItem(1,1,'oz',2400,250,25);
+select * from JAK_Order
 # chef login
 
 # user login
