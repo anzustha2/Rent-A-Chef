@@ -24,12 +24,38 @@
                 <ul class="nav navbar-nav mr-auto">
                     <li class="nav-item" role="presentation"><a class="nav-link" href="orderRequests.html">Order Requests</a></li>
                     <li class="nav-item" role="presentation"><a class="nav-link" href="mySchedule.html">My Schedule</a></li>
-                    <li class="dropdown show"><a class="dropdown-toggle nav-link dropdown-toggle" data-toggle="dropdown" aria-expanded="true" href="#">Account</a>
-                        <div class="dropdown-menu show" role="menu"><a class="dropdown-item" role="presentation" href="orderHistory.html">Order History</a><a class="dropdown-item" role="presentation" href="profile.html">Profile</a><a class="dropdown-item" role="presentation" href="paymentOptions.html">Payment Options</a></div>
+                    <li class="dropdown"><a class="dropdown-toggle nav-link dropdown-toggle" data-toggle="dropdown" aria-expanded="false" href="#">Account</a>
+                        <div class="dropdown-menu" role="menu"><a class="dropdown-item" role="presentation" href="orderHistory.html">Order History</a><a class="dropdown-item" role="presentation" href="profile.html">Profile</a><a class="dropdown-item" role="presentation" href="paymentOptions.html">Payment Options</a></div>
                     </li>
                 </ul><span class="navbar-text actions"> <a class="btn btn-light action-button" role="button" href="login.html">Logout</a></span></div>
         </div>
     </nav>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Address of Request</th>
+                    <th>Request Date</th>
+                    <th>Dish Requested</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>This data should be pulled from db</td>
+                    <td>This data should be pulled from db<br></td>
+                    <td>This data should be pulled from db<br></td>
+                    <td><button class="btn btn-primary" type="button">Accept</button><button class="btn btn-danger" type="button">Decline</button></td>
+                </tr>
+                <tr>
+                    <td>pulled from db</td>
+                    <td>08/24/2019</td>
+                    <td>pulled from db</td>
+                    <td><button class="btn btn-primary" type="button">Accept</button><button class="btn btn-danger" type="button">Decline</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
     <script src="assets/js/jquery.min.js"></script>
     <script src="assets/bootstrap/js/bootstrap.min.js"></script>
 </body>
