@@ -250,7 +250,7 @@ BEGIN
 	SELECT  LAST_INSERT_ID();
 END $$
 
-# Create table for the orders
+
 
 CREATE PROCEDURE JAK_SP_AddOrderItem(
 	orderIdIn BIGINT,
@@ -269,6 +269,91 @@ BEGIN
 		estTax = estTax+ estTaxIn
 	WHERE orderId = orderIdIn;
 END $$
+
+CREATE PROCEDURE JAK_SP_GetOrderItems(
+	orderIdIn BIGINT
+)
+BEGIN
+	SELECT 
+		d.dishId,
+        d.dishName,
+		d.description,
+        d.cuisineTypeCode,
+       # scl1.Description as 'cuisineType',
+        d.imagePath,
+        d.videoPath,
+        d.estCost,
+        i.unitTypeCode,
+      #  scl2.Description as 'unitType',
+        i.units,
+        i.estCostWithoutTax,
+        i.estTax
+        
+    FROM JAK_Order o
+    INNER JOIN JAK_OrderItem i ON o.orderId=i.orderId
+    INNER JOIN JAK_Dish d ON i.dishId=d.dishId
+  #  INNER JOIN JAK_SupportCodeLists scl1 ON scl1.CodeType='Cuisine_Type' AND scl1.Code=i.unitTypeCode
+   # INNER JOIN JAK_SupportCodeLists scl2 ON scl2.CodeType='Unit_Type' AND scl2.Code=i.unitTypeCode
+    Where o.orderId=orderIdIn;
+END $$
+
+CREATE PROCEDURE JAK_SP_GetOrders(
+	userIdIn BIGINT,
+	orderStatusCodeIn NVARCHAR(10)
+)
+BEGIN
+	SELECT 
+		o.orderId,
+		o.userId,
+		o.chefId,
+		o.createdTimestamp,
+		o.expireDateTime,
+		o.scheduledDateTime,
+		o.scheduledAddressId,
+		o.completionDateTime,
+		o.pickedUpDateTime,
+		o.orderStatusCode,
+		o.estCostWithoutTax,
+		o.estTax,
+		o.actualAmountWithoutTax,
+		o.actualTax,
+        scl.Description as 'OrderStatus'
+        FROM JAK_Order o
+        INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Order_Status' AND scl.Code=o.orderStatusCode
+        WHERE (o.chefId=userIdIn OR o.userId=userIdIn) 
+        AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode);
+END$$
+
+CREATE PROCEDURE JAK_SP_UpdateOrders(
+	orderIdIn BIGINT,
+	chefIdIn BIGINT,
+	expireDateTimeIn DATETIME,
+	scheduledDateTimeIn DATETIME,
+	scheduledAddressIdIn BIGINT ,
+	completionDateTimeIn DATETIME,
+	pickedUpDateTimeIn DATETIME,
+	orderStatusCodeIn NVARCHAR(10),
+	estCostWithoutTaxIn DOUBLE,
+	estTaxIn DOUBLE,
+	actualAmountWithoutTaxIn DOUBLE,
+	actualTaxIn DOUBLE
+)
+BEGIN
+	UPDATE  JAK_Order
+    SET 
+		chefId=chefIdIn,
+		expireDateTime=expireDateTimeIn,
+		scheduledDateTime=scheduledDateTimeIn,
+		scheduledAddressId=scheduledAddressIdIn,
+		completionDateTime=completionDateTimeIn,
+		pickedUpDateTime=pickedUpDateTimeIn,
+		orderStatusCode=orderStatusCodeIn,
+		estCostWithoutTax=estCostWithoutTaxIn,
+		estTax=estTaxIn,
+		actualAmountWithoutTax=actualAmountWithoutTaxIn,
+		actualTax=actualTaxIn
+	WHERE (orderId=orderIdIn); 
+END$$
 
 CREATE PROCEDURE JAK_SP_updateOrderItem(
 	orderIdIn BIGINT,
@@ -294,6 +379,8 @@ BEGIN
 		estTax = estTax+ estTaxIn - @oldEstTax
 	WHERE orderId = orderIdIn;
 END $$
+
+
 
 DELIMITER ;
 ##############################################################################################################################################
@@ -333,7 +420,8 @@ VALUES
  ('Order_Status','EXP','Expired'),
  ('Order_Status','COMP','Completed'),
  ('Order_Status','INV','Invalid'),
- ('Order_Status','IP','In-Progress')
+ ('Order_Status','IP','In-Progress'),
+ ('Order_Status','PU','Picked-Up')
  ;
  
 # Create some users now
@@ -415,7 +503,10 @@ CALL JAK_SP_CreateOrder(7,7,NOW()+INTERVAL 1 DAY,NOW()+ INTERVAL 6 HOUR);
 CALL JAK_SP_AddOrderItem(1, 1,'oz',240,25,2.5);
 CALL JAK_SP_AddOrderItem(1, 2,'oz',240,27.5,2.75);
 CALL JAK_SP_updateOrderItem(1,1,'oz',2400,250,25);
-select * from JAK_Order
+CALL JAK_SP_GetOrders(7,'OP');
+CALL JAK_SP_UpdateOrders(1,5,null,NOW()+INTERVAL 6 Hour,7,null,NOW()+INTERVAL 6 Hour,'PU',277.5,27.75,null,null);
+CALL JAK_SP_GetOrders(5,'PU');
+CALL JAK_SP_GetOrderItems(1);
 # chef login
 
 # user login
