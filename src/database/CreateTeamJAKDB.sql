@@ -64,10 +64,13 @@ CREATE TABLE JAK_Dish(
     dishName VARCHAR(50) NOT NULL,
     description VARCHAR (500),
     cuisineTypeCode VARCHAR(50) DEFAULT 'ALL',
+    unitTypeCode VARCHAR(50) DEFAULT 'CT',
+    baseUnits DOUBLE DEFAULT 1,
     imagePath VARCHAR(100),
     videoPath VARCHAR(100),
     estCost DOUBLE,
-    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Cuisine_Type',cuisineTypeCode))
+	CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Cuisine_Type',cuisineTypeCode)),
+    CONSTRAINT CHK_CODE CHECK (JAK_FN_ValidateCode('Unit_Type',unitTypeCode))
 );
 
 # Create table for the recipe
@@ -158,6 +161,22 @@ BEGIN
 	WHERE u.userName = userName;
 END $$
 
+
+# we could have multiple address for same user.
+CREATE PROCEDURE JAK_SP_AddUserAddress(
+		IN userIdIn BIGINT,
+		IN address1In VARCHAR(100),
+		IN address2In VARCHAR(50),
+		IN cityIn VARCHAR(20),
+		IN stateIn VARCHAR(20),
+		IN zipIn VARCHAR(20),
+		IN addressTypeCodeIn VARCHAR(20)
+)
+BEGIN 
+	INSERT INTO JAK_Address (userId, address1, address2, city, state,zip,addressTypeCode)
+    VALUES (userIdIn, address1In, address2In, cityIn, stateIn, zipIn, addressTypeCodeIn);
+	SELECT LAST_INSERT_ID();
+END $$
 #This stored procedure will return the address for the given userId
 # we could have multiple address for same user.
 CREATE PROCEDURE JAK_SP_GetUserAddress(
@@ -211,9 +230,13 @@ BEGIN
 		d.imagePath,
 		d.videoPath,
         d.estCost,
-        scl.Description as 'Cuisine'
+        d.unitTypeCode,
+        d.baseUnits,
+        scl.Description as 'Cuisine',
+        scl2.Description as 'UnitType'
     FROM JAK_Dish d
     INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Cuisine_Type' AND scl.Code=d.cuisineTypeCode
+    INNER JOIN JAK_SupportCodeLists scl2 ON scl2.CodeType='Unit_Type' AND scl2.Code=d.unitTypeCode
     WHERE d.cuisineTypeCode=cuisineTypeCode OR cuisineTypeCode='ALL' OR d.cuisineTypeCode='ALL';
 END $$
 
@@ -275,25 +298,26 @@ CREATE PROCEDURE JAK_SP_GetOrderItems(
 )
 BEGIN
 	SELECT 
+		o.orderId,
 		d.dishId,
         d.dishName,
 		d.description,
         d.cuisineTypeCode,
-       # scl1.Description as 'cuisineType',
         d.imagePath,
         d.videoPath,
         d.estCost,
         i.unitTypeCode,
-      #  scl2.Description as 'unitType',
         i.units,
         i.estCostWithoutTax,
-        i.estTax
+        i.estTax,
+        scl1.Description as 'cuisineType',
+        scl2.Description as 'unitType'
         
     FROM JAK_Order o
     INNER JOIN JAK_OrderItem i ON o.orderId=i.orderId
     INNER JOIN JAK_Dish d ON i.dishId=d.dishId
-  #  INNER JOIN JAK_SupportCodeLists scl1 ON scl1.CodeType='Cuisine_Type' AND scl1.Code=i.unitTypeCode
-   # INNER JOIN JAK_SupportCodeLists scl2 ON scl2.CodeType='Unit_Type' AND scl2.Code=i.unitTypeCode
+    INNER JOIN JAK_SupportCodeLists scl1 ON scl1.CodeType='Cuisine_Type' AND scl1.Code=d.cuisineTypeCode
+   INNER JOIN JAK_SupportCodeLists scl2 ON scl2.CodeType='Unit_Type' AND scl2.Code=i.unitTypeCode
     Where o.orderId=orderIdIn;
 END $$
 
@@ -320,11 +344,11 @@ BEGIN
         scl.Description as 'OrderStatus'
         FROM JAK_Order o
         INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Order_Status' AND scl.Code=o.orderStatusCode
-        WHERE (o.chefId=userIdIn OR o.userId=userIdIn) 
+        WHERE (o.chefId=userIdIn OR o.userId=userIdIn OR userIdIn=0) 
         AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode);
 END$$
 
-CREATE PROCEDURE JAK_SP_UpdateOrders(
+CREATE PROCEDURE JAK_SP_UpdateOrder(
 	orderIdIn BIGINT,
 	chefIdIn BIGINT,
 	expireDateTimeIn DATETIME,
@@ -356,12 +380,12 @@ BEGIN
 END$$
 
 CREATE PROCEDURE JAK_SP_updateOrderItem(
-	orderIdIn BIGINT,
-    dishIdIn BIGINT,
-    unitTypeCodeIn VARCHAR (50),
-    unitsIn DOUBLE,
-    estCostWithoutTaxIn DOUBLE,
-    estTaxIn DOUBLE
+	IN orderIdIn BIGINT,
+    IN dishIdIn BIGINT,
+    IN unitTypeCodeIn VARCHAR (50),
+    IN unitsIn DOUBLE,
+    IN estCostWithoutTaxIn DOUBLE,
+    IN estTaxIn DOUBLE
 )
 BEGIN
 	SELECT estCostWithoutTax,estTax INTO @oldEstCost,@oldEstTax
@@ -380,7 +404,14 @@ BEGIN
 	WHERE orderId = orderIdIn;
 END $$
 
-
+CREATE PROCEDURE JAK_SP_getOptions(
+	IN optionTypeCodeIn VARCHAR(50)
+)
+BEGIN
+	SELECT Code, Description
+    FROM JAK_SupportCodeLists
+    WHERE codeType = optionTypeCodeIn;
+END $$
 
 DELIMITER ;
 ##############################################################################################################################################
@@ -415,6 +446,8 @@ VALUES
  ('Unit_Type', 'SP','Spoon'),
  ('Unit_Type', 'mg','milligram'),
  ('Unit_Type','oz', 'Ounce'),
+ ('Unit_Type','CT', 'Count'),
+ ('Unit_Type','CUP', 'Cups'),
 -- Order status
  ('Order_Status','OP', 'Open'),
  ('Order_Status','EXP','Expired'),
@@ -463,10 +496,10 @@ VALUES(1,'Sugar', 'Sweet powder made out of sugarcane liquid', 'sugar.png',''),
 (6,'Black Pepper','spicy black pepper','blackPepper.png','');
 
 #Add some dishes
-INSERT INTO JAK_Dish(dishId,dishName, description, cuisineTypeCode, imagePath, videoPath, estCost)
-VALUES(1,'Red tea','hot sweet red tea','ALL','redtea.png','https://www.youtube.com/watch?v=GWUkMHUUOVQ',2.50),
-(2,'Masala tea','hot sweet tea with milk','IND','masalaTea.png','https://www.youtube.com/watch?v=6qU5FkbXob8',2.75),
-(3,'Mountain tea','hot sweet tea with milk and black pepper','NEP','mountainTea.png','',3.00);
+INSERT INTO JAK_Dish(dishId,dishName, description, cuisineTypeCode,unitTypeCode,baseUnits, imagePath, videoPath, estCost)
+VALUES(1,'Red tea','hot sweet red tea','ALL','CUP',1,'redtea.png','https://www.youtube.com/watch?v=GWUkMHUUOVQ',2.50),
+(2,'Masala tea','hot sweet tea with milk','IND','CUP',1,'masalaTea.png','https://www.youtube.com/watch?v=6qU5FkbXob8',2.75),
+(3,'Mountain tea','hot sweet tea with milk and black pepper','NEP','CUP',1,'mountainTea.png','',3.00);
 
 
 #Create recipe for the dishes
@@ -500,13 +533,16 @@ CALL JAK_SP_GetDishes('IND');
 CALL JAK_SP_GetDishes('ALL');
 CALL JAK_SP_GetDishIngredients(3);
 CALL JAK_SP_CreateOrder(7,7,NOW()+INTERVAL 1 DAY,NOW()+ INTERVAL 6 HOUR);
-CALL JAK_SP_AddOrderItem(1, 1,'oz',240,25,2.5);
-CALL JAK_SP_AddOrderItem(1, 2,'oz',240,27.5,2.75);
-CALL JAK_SP_updateOrderItem(1,1,'oz',2400,250,25);
+CALL JAK_SP_AddOrderItem(1, 1,'CUP',1,25,2.5);
+CALL JAK_SP_AddOrderItem (1, 2,'CUP',2,27.5,2.75);
+CALL JAK_SP_updateOrderItem(1,1,'CUP',4,250,25);
 CALL JAK_SP_GetOrders(7,'OP');
-CALL JAK_SP_UpdateOrders(1,5,null,NOW()+INTERVAL 6 Hour,7,null,NOW()+INTERVAL 6 Hour,'PU',277.5,27.75,null,null);
-CALL JAK_SP_GetOrders(5,'PU');
+CALL JAK_SP_UpdateOrder(1,5,null,NOW()+INTERVAL 6 Hour,7,null,NOW()+INTERVAL 6 Hour,'PU',277.5,27.75,null,null);
+CALL JAK_SP_GetOrders(5,'P');
 CALL JAK_SP_GetOrderItems(1);
+CALL JAK_SP_AddUserAddress(1,'123 main st', '202','chicago','IL','60660','APT');
+
+CALL JAK_SP_GetOptions('Cuisine_Type');
 # chef login
 
 # user login
