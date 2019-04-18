@@ -3,13 +3,13 @@ package model;
 import java.util.Date;
 
 public class User {
-	private int userId;
-	private String userName;
-	private String userTypeCode;
-	private String userStatusCode;
-	private String userStatusCodeDescription;
-	private Date unblockDate;
-	private boolean isIncorrectPassword;
+	public int userId;
+	public String userName;
+	public String userTypeCode;
+	public String userStatusCode;
+	public String userStatusCodeDescription;
+	public Date unblockDate;
+	public boolean isIncorrectPassword;
 	public String firstName;
 	public String lastName;
 	public String phoneNo;

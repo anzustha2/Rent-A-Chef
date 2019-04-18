@@ -5,6 +5,7 @@
 <struts-config>
   <global-forwards>
    	<forward name="main" path="/WEB-INF/templates/main.jsp"/>
+   	<forward name="chefLanding" path="/chefLanding.jsp" />
   </global-forwards>
   <action-mappings>
      	<action path="/processLogin"  type="coreservlets.ProcessLogin">

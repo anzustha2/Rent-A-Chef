@@ -14,7 +14,7 @@ import database.DBAccess;
 import model.User;
 import utility.Helper;
 
-public class ProcessLogin extends Action {
+public class PlaceOrder extends Action {
 	@Override
 	public ActionForward execute(ActionMapping mapping, ActionForm form, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
@@ -35,20 +35,17 @@ public class ProcessLogin extends Action {
 			}
 		} else {
 			responses.add("Please provide the missing information.");
-		} /*
-			 * if (responses.size() > 0) { Helper.prepareNextPage(request.getSession(),
-			 * responses, "login-content"); } else if (usr.getUserType().equals("ADMIN")) {
-			 * Helper.prepareNextPage(request.getSession(), responses,
-			 * "admin-home-content"); } else if (usr.getUserType().equals("USR")) {
-			 * Helper.prepareNextPage(request.getSession(), responses, "usr-home-content");
-			 * } else if (usr.getUserType().equals("CHEF")) {
-			 * Helper.prepareNextPage(request.getSession(), responses, "chef-home-content");
-			 * }
-			 */
-		// if (usr.getUserType().equals("CHEF"))
-		request.getSession().setAttribute("user", usr);
-		return (mapping.findForward("chefLanding"));
-
+		}
+		if (responses.size() > 0) {
+			Helper.prepareNextPage(request.getSession(), responses, "login-content");
+		} else if (usr.getUserType().equals("ADMIN")) {
+			Helper.prepareNextPage(request.getSession(), responses, "admin-home-content");
+		} else if (usr.getUserType().equals("USR")) {
+			Helper.prepareNextPage(request.getSession(), responses, "usr-home-content");
+		} else if (usr.getUserType().equals("CHEF")) {
+			Helper.prepareNextPage(request.getSession(), responses, "chef-home-content");
+		}
+		return (mapping.findForward("main"));
 	}
 
 }

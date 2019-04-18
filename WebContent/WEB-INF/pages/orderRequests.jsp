@@ -6,7 +6,6 @@
  <%@ page import="model.User" %>
  <%@ page import="database.DBAccess" %>
  <%@ page import="utility.Helper" %>
- <%@ page import="model.Address" %>
  <%!List<Order> orders=new ArrayList<Order>();%>
  
                     <% 
@@ -49,9 +48,7 @@
     <div class="table-responsive">
         <table class="table">
             <thead>
-            <%for(Order order:orders) {
-            	Address address=DBAccess.JAK_SP_GetAddress(order.scheduledAddressId);
-            %>
+            <%for(Order order:orders) {%>
                 <tr>
                     <th><%=order.orderId %></th>
                     <th><%=order.orderStatusDescription %></th>
