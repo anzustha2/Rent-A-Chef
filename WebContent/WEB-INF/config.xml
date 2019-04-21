@@ -11,6 +11,15 @@
      	<action path="/processLogin"  type="coreservlets.ProcessLogin">
       		<forward name="main" path="/WEB-INF/templates/main.jsp"/>
     	</action>
+    	<action path="/addOrderItem"  type="coreservlets.AddOrderItem">
+      		<forward name="startOrder" path="/StartOrder.jsp"/>
+    	</action>
+    	<action path="/removeOrderItem"  type="coreservlets.RemoveOrderItem">
+      		<forward name="startOrder" path="/StartOrder.jsp"/>
+    	</action>
+    	<action path="/submitOrder"  type="coreservlets.SubmitOrder">
+      		<forward name="startOrder" path="/StartOrder.jsp"/>
+    	</action>
   </action-mappings>
 </struts-config>
 

@@ -89,12 +89,12 @@ CREATE TABLE JAK_Order(
     userId BIGINT NOT NULL,
     chefId BIGINT,
     createdTimestamp DATETIME DEFAULT NOW(),
-    expireDateTime DATETIME,
-    scheduledDateTime DATETIME,
+    expireDateTime NVARCHAR(50),
+    scheduledDateTime NVARCHAR(50),
     scheduledAddressId BIGINT,
-    completionDateTime DATETIME,
-    pickedUpDateTime DATETIME,
-    orderStatusCode VARCHAR(20) DEFAULT 'OP',
+    completionDateTime NVARCHAR(50),
+    pickedUpDateTime NVARCHAR(50),
+    orderStatusCode VARCHAR(20) DEFAULT 'IP',
     estCostWithoutTax DOUBLE DEFAULT 0.0,
     estTax DOUBLE DEFAULT 0.0,
     actualAmountWithoutTax DOUBLE,
@@ -240,6 +240,28 @@ BEGIN
     WHERE d.cuisineTypeCode=cuisineTypeCode OR cuisineTypeCode='ALL' OR d.cuisineTypeCode='ALL';
 END $$
 
+CREATE PROCEDURE JAK_SP_GetDish(
+	IN dishIdIn BIGINT
+)
+BEGIN
+	SELECT
+		d.dishId,
+		d.dishName,
+		d.description,
+		d.cuisineTypeCode,
+		d.imagePath,
+		d.videoPath,
+        d.estCost,
+        d.unitTypeCode,
+        d.baseUnits,
+        scl.Description as 'Cuisine',
+        scl2.Description as 'UnitType'
+    FROM JAK_Dish d
+    INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Cuisine_Type' AND scl.Code=d.cuisineTypeCode
+    INNER JOIN JAK_SupportCodeLists scl2 ON scl2.CodeType='Unit_Type' AND scl2.Code=d.unitTypeCode
+    WHERE d.dishId = dishIdIn;
+END $$
+
 CREATE PROCEDURE JAK_SP_GetDishIngredients(
 	IN dishId BIGINT
 )
@@ -263,8 +285,8 @@ END $$
 CREATE PROCEDURE JAK_SP_CreateOrder(
 	IN userIdIn BIGINT,
     IN scheduledAddressIdIn BIGINT,
-    IN expireDateTimeIn DATETIME,
-    IN scheduledDateTimeIn DATETIME
+    IN expireDateTimeIn NVARCHAR(50),
+    IN scheduledDateTimeIn NVARCHAR(50)
 )
 BEGIN
 	INSERT INTO JAK_Order (userId, expireDateTime, scheduledAddressId, scheduledDateTime)
@@ -348,14 +370,40 @@ BEGIN
         AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode);
 END$$
 
+CREATE PROCEDURE JAK_SP_GetOrder(
+	orderIdIn BIGINT
+)
+BEGIN
+	SELECT 
+		o.orderId,
+		o.userId,
+		o.chefId,
+		o.createdTimestamp,
+		o.expireDateTime,
+		o.scheduledDateTime,
+		o.scheduledAddressId,
+		o.completionDateTime,
+		o.pickedUpDateTime,
+		o.orderStatusCode,
+		o.estCostWithoutTax,
+		o.estTax,
+		o.actualAmountWithoutTax,
+		o.actualTax,
+        scl.Description as 'OrderStatus'
+        FROM JAK_Order o
+         INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Order_Status' AND scl.Code=o.orderStatusCode
+
+        WHERE o.orderId = orderIdIn;
+END$$
+
 CREATE PROCEDURE JAK_SP_UpdateOrder(
 	orderIdIn BIGINT,
 	chefIdIn BIGINT,
-	expireDateTimeIn DATETIME,
-	scheduledDateTimeIn DATETIME,
+	expireDateTimeIn VARCHAR(50),
+	scheduledDateTimeIn VARCHAR(50),
 	scheduledAddressIdIn BIGINT ,
-	completionDateTimeIn DATETIME,
-	pickedUpDateTimeIn DATETIME,
+	completionDateTimeIn VARCHAR(50),
+	pickedUpDateTimeIn VARCHAR(50),
 	orderStatusCodeIn NVARCHAR(10),
 	estCostWithoutTaxIn DOUBLE,
 	estTaxIn DOUBLE,
@@ -365,7 +413,7 @@ CREATE PROCEDURE JAK_SP_UpdateOrder(
 BEGIN
 	UPDATE  JAK_Order
     SET 
-		chefId=chefIdIn,
+		chefId= CASE WHEN chefIdIn >0 THEN chefIdIn ELSE NULL END,
 		expireDateTime=expireDateTimeIn,
 		scheduledDateTime=scheduledDateTimeIn,
 		scheduledAddressId=scheduledAddressIdIn,
@@ -402,6 +450,24 @@ BEGIN
     SET estCostWithoutTax = estCostWithoutTax + estCostWithoutTaxIn - @oldEstCost,
 		estTax = estTax+ estTaxIn - @oldEstTax
 	WHERE orderId = orderIdIn;
+END $$
+
+CREATE PROCEDURE JAK_SP_RemoveOrderItem(
+	IN orderIdIn BIGINT,
+    IN dishIdIn BIGINT
+)
+BEGIN
+	SELECT estCostWithoutTax,estTax INTO @oldEstCost,@oldEstTax
+    FROM JAK_OrderItem
+    WHERE orderId=orderIdIn AND dishId=dishIdIn LIMIT 1;
+    
+	UPDATE JAK_Order
+    SET estCostWithoutTax = estCostWithoutTax - @oldEstCost,
+		estTax = estTax - @oldEstTax
+	WHERE orderId = orderIdIn;
+    
+    DELETE FROM JAK_OrderItem
+    WHERE orderId=orderIdIn AND dishId=dishIdIn LIMIT 1;
 END $$
 
 CREATE PROCEDURE JAK_SP_getOptions(
@@ -543,6 +609,15 @@ CALL JAK_SP_GetOrderItems(1);
 CALL JAK_SP_AddUserAddress(1,'123 main st', '202','chicago','IL','60660','APT');
 
 CALL JAK_SP_GetOptions('Cuisine_Type');
+
+CALL JAK_SP_GetOrder(1);
+CALL JAK_SP_GetDishIngredients(1);
+
+CALL JAK_SP_GetDish(2);
+
+select * from JAK_Order;
+select * from JAK_OrderItem;
+CALL JAK_SP_RemoveOrderItem(2,3);
 # chef login
 
 # user login

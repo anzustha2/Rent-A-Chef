@@ -1,5 +1,7 @@
 package model;
 
+import database.DBAccess;
+
 public class Dish {
 	public int dishId;
 	public String name;
@@ -31,5 +33,18 @@ public class Dish {
 		this.baseUnits = baseUnits;
 		this.cuisineDescription = cuisineDescription;
 		this.unitDescription = unitDescription;
+	}
+
+	public String writeIngredients() {
+		String val = "";
+		java.util.List<Ingredient> ingredients = DBAccess.JAK_SP_GetDishIngredients(dishId);
+
+		for (Ingredient i : ingredients) {
+			if (!val.isEmpty()) {
+				val += ", ";
+			}
+			val = val + i.ingredientName + " " + i.units + " " + i.unitType;
+		}
+		return val;
 	}
 }

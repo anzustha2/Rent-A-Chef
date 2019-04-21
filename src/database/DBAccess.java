@@ -5,7 +5,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
@@ -86,6 +85,27 @@ public class DBAccess {
 		return allDishes;
 	}
 
+	public static Dish JAK_SP_GetDish(int dishId) {
+		String sql = "{CALL JAK_SP_GetDish(?)}";
+		Connection conn = null;
+		Dish dish = null;
+		try {
+			conn = Connect.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, dishId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next())
+				dish = new Dish(rs.getInt(1), rs.getString(2), rs.getString(3), rs.getString(4), rs.getString(5),
+						rs.getString(6), rs.getDouble(7), rs.getString(8), rs.getDouble(9), rs.getString(10),
+						rs.getString(11));
+
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return dish;
+	}
+
 	public static Dictionary<String, String> JAK_SP_GetOptions(String optionTypeCode) {
 		Dictionary<String, String> options = new Hashtable<String, String>();
 		String sql = "{CALL JAK_SP_GetOptions(?)}";
@@ -103,6 +123,21 @@ public class DBAccess {
 			e.printStackTrace();
 		}
 		return options;
+	}
+
+	public static void JAK_SP_RemoveOrderItem(int orderId, int dishId) {
+		String sql = "{CALL JAK_SP_RemoveOrderItem(?, ?)}";
+		Connection conn = null;
+		try {
+			conn = Connect.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, orderId);
+			ps.setInt(2, dishId);
+			ResultSet rs = ps.executeQuery();
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public static List<Address> JAK_SP_GetUserAddress(int userId) {
@@ -172,7 +207,8 @@ public class DBAccess {
 		return JAK_SP_GetAddress(newAddressId);
 	}
 
-	public static int JAK_SP_CreateOrder(int userId, int addressId, Date expireDateTime, Date scheduledDateTime) {
+	public static int JAK_SP_CreateOrder(int userId, int addressId, java.sql.Date expireDateTime,
+			java.sql.Date scheduledDateTime) {
 		String sql = "{CALL JAK_SP_CreateOrder(?, ?, ?, ?)}";
 		Connection conn = null;
 		int newOrderId = 0;
@@ -181,8 +217,8 @@ public class DBAccess {
 			PreparedStatement ps = conn.prepareStatement(sql);
 			ps.setInt(1, userId);
 			ps.setInt(2, addressId);
-			ps.setDate(3, (java.sql.Date) expireDateTime);
-			ps.setDate(4, (java.sql.Date) scheduledDateTime);
+			ps.setDate(3, expireDateTime);
+			ps.setDate(4, scheduledDateTime);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
 				newOrderId = rs.getInt(1);
@@ -194,8 +230,8 @@ public class DBAccess {
 		return newOrderId;
 	}
 
-	public static void JAK_SP_UpdateOrder(int orderId, int chefId, Date expireDateTime, Date scheduledDateTime,
-			int addressId, Date completionDateTime, Date pickedUpDateTime, String orderStatusCode,
+	public static void JAK_SP_UpdateOrder(int orderId, int chefId, String expireDateTime, String scheduledDateTime,
+			int addressId, String completionDateTime, String pickedUpDateTime, String orderStatusCode,
 			Double estCostWithoutTax, Double estTax, Double actualAmountWithoutTax, Double actualTax) {
 		String sql = "{CALL JAK_SP_UpdateOrder(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?  )}";
 		Connection conn = null;
@@ -204,11 +240,11 @@ public class DBAccess {
 			PreparedStatement ps = conn.prepareStatement(sql);
 			ps.setInt(1, orderId);
 			ps.setInt(2, chefId);
-			ps.setDate(3, (java.sql.Date) expireDateTime);
-			ps.setDate(4, (java.sql.Date) scheduledDateTime);
+			ps.setString(3, expireDateTime.toString());
+			ps.setString(4, scheduledDateTime.toString());
 			ps.setInt(5, addressId);
-			ps.setDate(6, (java.sql.Date) completionDateTime);
-			ps.setDate(7, (java.sql.Date) pickedUpDateTime);
+			ps.setString(6, completionDateTime.toString());
+			ps.setString(7, pickedUpDateTime.toString());
 			ps.setString(8, orderStatusCode);
 			ps.setDouble(9, estCostWithoutTax);
 			ps.setDouble(10, estTax);
@@ -282,6 +318,28 @@ public class DBAccess {
 			e.printStackTrace();
 		}
 		return allOrders;
+	}
+
+	// userId=0 will return all; Order_Status='OP','EXP','COMP','INV','IP','PU'
+	public static Order JAK_SP_GetOrder(int orderId) {
+		String sql = "{CALL JAK_SP_GetOrder(?)}";
+		Connection conn = null;
+		Order order = null;
+		try {
+			conn = Connect.getConnection();
+			PreparedStatement ps = conn.prepareStatement(sql);
+			ps.setInt(1, orderId);
+			ResultSet rs = ps.executeQuery();
+			while (rs.next()) {
+				order = new Order(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getDate(4), rs.getDate(5), rs.getDate(6),
+						rs.getInt(7), rs.getDate(8), rs.getDate(9), rs.getString(10), rs.getDouble(11),
+						rs.getDouble(12), rs.getDouble(13), rs.getDouble(14), rs.getString(15));
+			}
+			conn.close();
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
+		return order;
 	}
 
 	public static List<OrderItem> JAK_SP_GetOrderItems(int orderId) {
