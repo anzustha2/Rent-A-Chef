@@ -24,10 +24,10 @@ CREATE TABLE JAK_User(
 	userId BIGINT PRIMARY KEY AUTO_INCREMENT NOT NULL,
 	userName VARCHAR(50) UNIQUE NOT NULL,
     userTypeCode VARCHAR(10) NOT NULL,
-    dateCreated DATETIME DEFAULT NOW(),
+    dateCreated  VARCHAR(40) ,
     userPassword VARCHAR(255) NOT NULL,
     userStatusCode VARCHAR(10) NOT NULL DEFAULT 'ACV',
-    unblockDate DATETIME NULL,
+    unblockDate VARCHAR(50) NULL,
     firstName VARCHAR(50) NOT NULL,
     lastName VARCHAR(50) NOT NULL,
     phoneNo VARCHAR(15) NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE JAK_Order(
 	orderId BIGINT PRIMARY KEY NOT NULL AUTO_INCREMENT,
     userId BIGINT NOT NULL,
     chefId BIGINT,
-    createdTimestamp DATETIME DEFAULT NOW(),
+    createdTimestamp VARCHAR(50),
     expireDateTime NVARCHAR(50),
     scheduledDateTime NVARCHAR(50),
     scheduledAddressId BIGINT,
@@ -367,7 +367,8 @@ BEGIN
         FROM JAK_Order o
         INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Order_Status' AND scl.Code=o.orderStatusCode
         WHERE (o.chefId=userIdIn OR o.userId=userIdIn OR userIdIn=0) 
-        AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode);
+        AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode)
+        AND (orderStatusCode<>'C' AND orderStatusCode<>'IP');
 END$$
 
 CREATE PROCEDURE JAK_SP_GetOrder(
@@ -520,7 +521,8 @@ VALUES
  ('Order_Status','COMP','Completed'),
  ('Order_Status','INV','Invalid'),
  ('Order_Status','IP','In-Progress'),
- ('Order_Status','PU','Picked-Up')
+ ('Order_Status','PU','Picked-Up'),
+ ('Order_Status','C','Cancelled')
  ;
  
 # Create some users now
@@ -592,12 +594,14 @@ VALUES
 #########################################################       Test        ###########################################################
 ##############################################################################################################################################
 # admin login
+/*
 CALL JAK_SP_ProcessLogin('admin','admin');
 CALL JAK_SP_GetUserAddress(1);
 CALL JAK_SP_GetAddress(9);
 CALL JAK_SP_GetDishes('IND');
 CALL JAK_SP_GetDishes('ALL');
 CALL JAK_SP_GetDishIngredients(3);
+
 CALL JAK_SP_CreateOrder(7,7,NOW()+INTERVAL 1 DAY,NOW()+ INTERVAL 6 HOUR);
 CALL JAK_SP_AddOrderItem(1, 1,'CUP',1,25,2.5);
 CALL JAK_SP_AddOrderItem (1, 2,'CUP',2,27.5,2.75);
@@ -617,7 +621,7 @@ CALL JAK_SP_GetDish(2);
 
 select * from JAK_Order;
 select * from JAK_OrderItem;
-CALL JAK_SP_RemoveOrderItem(2,3);
+CALL JAK_SP_RemoveOrderItem(2,3);*/
 # chef login
 
 # user login

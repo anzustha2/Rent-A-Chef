@@ -32,7 +32,7 @@ public class DBAccess {
 				usr = new User(rs.getInt(1), // userId
 						userName, rs.getString(2), // userTypeCode
 						rs.getString(3), // userTypeCode
-						rs.getDate(4), // unblock date
+						rs.getString(4), // unblock date
 						rs.getBoolean(5), // is incorrect password
 						rs.getString(6), // user status description
 						rs.getString(7), rs.getString(8), rs.getString(9), rs.getString(10));
@@ -309,9 +309,9 @@ public class DBAccess {
 			ps.setString(2, orderStatusCode);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				allOrders.add(new Order(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getDate(4), rs.getDate(5),
-						rs.getDate(6), rs.getInt(7), rs.getDate(8), rs.getDate(9), rs.getString(10), rs.getDouble(11),
-						rs.getDouble(12), rs.getDouble(13), rs.getDouble(14), rs.getString(15)));
+				allOrders.add(new Order(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getString(4), rs.getString(5),
+						rs.getString(6), rs.getInt(7), rs.getString(8), rs.getString(9), rs.getString(10),
+						rs.getDouble(11), rs.getDouble(12), rs.getDouble(13), rs.getDouble(14), rs.getString(15)));
 			}
 			conn.close();
 		} catch (SQLException e) {
@@ -331,9 +331,9 @@ public class DBAccess {
 			ps.setInt(1, orderId);
 			ResultSet rs = ps.executeQuery();
 			while (rs.next()) {
-				order = new Order(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getDate(4), rs.getDate(5), rs.getDate(6),
-						rs.getInt(7), rs.getDate(8), rs.getDate(9), rs.getString(10), rs.getDouble(11),
-						rs.getDouble(12), rs.getDouble(13), rs.getDouble(14), rs.getString(15));
+				order = new Order(rs.getInt(1), rs.getInt(2), rs.getInt(3), rs.getString(4), rs.getString(5),
+						rs.getString(6), rs.getInt(7), rs.getString(8), rs.getString(9), rs.getString(10),
+						rs.getDouble(11), rs.getDouble(12), rs.getDouble(13), rs.getDouble(14), rs.getString(15));
 			}
 			conn.close();
 		} catch (SQLException e) {

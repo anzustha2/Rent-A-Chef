@@ -1,21 +1,19 @@
 package model;
 
-import java.util.Date;
-
 public class User {
 	public int userId;
 	public String userName;
 	public String userTypeCode;
 	public String userStatusCode;
 	public String userStatusCodeDescription;
-	public Date unblockDate;
+	public String unblockDate;
 	public boolean isIncorrectPassword;
 	public String firstName;
 	public String lastName;
 	public String phoneNo;
 	public String email;
 
-	public User(int userId, String userName, String userTypeCode, String userStatusCode, Date unblockDate,
+	public User(int userId, String userName, String userTypeCode, String userStatusCode, String unblockDate,
 			boolean isIncorrectPassword, String userStatusCodeDescription, String firstName, String lastName,
 			String phoneNo, String email) {
 		this.userId = userId;
