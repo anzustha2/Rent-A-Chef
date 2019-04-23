@@ -32,22 +32,28 @@ public class ProcessLogin extends Action {
 			}
 			if (usr != null && !usr.hasInvalidPassword()) {
 				Helper.resetDataValidation(request);
+				request.getSession().setAttribute("user", usr);
 			}
 		} else {
 			responses.add("Please provide the missing information.");
-		} /*
-			 * if (responses.size() > 0) { Helper.prepareNextPage(request.getSession(),
-			 * responses, "login-content"); } else if (usr.getUserType().equals("ADMIN")) {
-			 * Helper.prepareNextPage(request.getSession(), responses,
-			 * "admin-home-content"); } else if (usr.getUserType().equals("USR")) {
-			 * Helper.prepareNextPage(request.getSession(), responses, "usr-home-content");
-			 * } else if (usr.getUserType().equals("CHEF")) {
-			 * Helper.prepareNextPage(request.getSession(), responses, "chef-home-content");
-			 * }
-			 */
-		// if (usr.getUserType().equals("CHEF"))
-		request.getSession().setAttribute("user", usr);
-		return (mapping.findForward("chefLanding"));
+		}
+		if (responses.size() > 0) {
+			Helper.prepareNextPage(request.getSession(), responses, "login-content");
+		} else if (usr.getUserType().equals("ADMIN")) {
+			Helper.prepareNextPage(request.getSession(), responses, "admin-home-content");
+		} else if (usr.getUserType().equals("USR")) {
+			Helper.prepareNextPage(request.getSession(), responses, "usr-home-content");
+		} else if (usr.getUserType().equals("CHEF")) {
+			Helper.prepareNextPage(request.getSession(), responses, "chef-home-content");
+		}
+		request.getSession().removeAttribute("order");
+		request.getSession().removeAttribute("dish");
+		return (mapping.findForward("main"));
+		/*
+		 * if (usr.getUserType().equals("CHEF"))
+		 * request.getSession().setAttribute("user", usr); return
+		 * (mapping.findForward("chefLanding"));
+		 */
 
 	}
 

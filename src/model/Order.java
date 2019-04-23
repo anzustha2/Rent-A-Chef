@@ -1,17 +1,15 @@
 package model;
 
-import java.util.Date;
-
 public class Order {
 	public int orderId;
 	public int userId;
 	public int chefId;
-	public Date createdTimestamp;
-	public Date expireDateTime;
-	public Date scheduledDateTime;
+	public String createdTimestamp;
+	public String expireDateTime;
+	public String scheduledDateTime;
 	public int scheduledAddressId;
-	public Date completionDate;
-	public Date pickedUpDateTime;
+	public String completionDate;
+	public String pickedUpDateTime;
 	public String orderStatusCode;
 	public Double estCostWithoutTax;
 	public Double estTax;
@@ -23,8 +21,8 @@ public class Order {
 		// TODO Auto-generated constructor stub
 	}
 
-	public Order(int orderId, int userId, int chefId, Date createdTimestamp, Date expireDateTime,
-			Date scheduledDateTime, int scheduledAddressId, Date completionDate, Date pickedUpDateTime,
+	public Order(int orderId, int userId, int chefId, String createdTimestamp, String expireDateTime,
+			String scheduledDateTime, int scheduledAddressId, String completionDate, String pickedUpDateTime,
 			String orderStatusCode, Double estCostWithoutTax, Double estTax, Double actualAmountWithoutTax,
 			Double actualTax, String orderStatusDescription) {
 		super();
