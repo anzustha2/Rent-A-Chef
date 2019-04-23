@@ -22,38 +22,35 @@
   	dishes=DBAccess.JAK_SP_GetDishes("ALL");
   	
   		%>
-  		 
+  		 <jsp:include page="/WEB-INF/templates/navBar.jsp" />
   		<div class="table-responsive">
         <table class="table">
             <thead>
                 <tr>
-                    <th>Available Dishes</th>
+                    <th colSpan="3">Available Dishes</th>
                 </tr>
             </thead>
             <tbody>
             <%for(Dish d: dishes){ %>
             <tr style="background-color: #f2f2f2;"><td>
                 <tr>
-                    <td><%=d.name +" ("+ d.baseUnits + " "+d.unitDescription +") $" +d.estCost%></td>
+                    <td colSpan="2"><%=d.name +" ("+ d.baseUnits + " "+d.unitDescription +") $" +d.estCost%></td>
+                    <td rowSpan="2">
+	                	<form ACTION="addOrderItem.do" METHOD="POST"> 
+	                    	<input type="hidden" name="dishId" id="dishId" value="<%=d.dishId%>"/>
+	                    	<input type="submit" onClick="" value="Pick" class="btn btn-primary">
+	                    </form>
+                	</td>
                 </tr>
                 <tr>
-                    <td>
+                    <td colSpan="2">
                     	<p style="font-size:10px;">
                     	<strong>Description:</strong><%=" "+d.description+" "%>
                     	<strong>Ingredients:</strong><%=" "+d.writeIngredients() %>  
                     	</p>
                     </td>    
                 </tr>
-                <tr>
-                	<td >
-	                	<form ACTION="addOrderItem.do" METHOD="POST"> 
-	                    	<input type="hidden" name="dishId" id="dishId" value="<%=d.dishId%>"/>
-	                    	<input type="submit" onClick="" value="Pick" class="pick">
-	                    </form>
-                	</td>
-                </tr>
-                </td>
-                </tr>
+         
               <%} %>
             </tbody>
         </table>
@@ -67,7 +64,7 @@
         	<input type="datetime-local" id="scheduledDateTime"
        				name="scheduledDateTime" value="2019-04-25T19:30"
        				min="2019-04-25T00:00" max="2019-04-30T00:00">
-       			<input type="submit" onClick="" value="Place Order" class="pick">
+       			<input type="submit" onClick="" value="Place Order" class="btn btn-primary">
        		</form>
        		
        		<p> <strong>Scheduled Address:</strong></p>

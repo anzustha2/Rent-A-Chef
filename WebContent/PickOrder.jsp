@@ -15,7 +15,7 @@
   	User user = (User)session.getAttribute("user");
   	List<Order> orders=DBAccess.JAK_SP_GetOrders(0, "OP");
   		%>
-  		 
+  		  <jsp:include page="/WEB-INF/templates/navBar.jsp" />
   		<div class="table-responsive">
         
         <%if (orders==null || orders.size()==0) {%>
@@ -25,10 +25,10 @@
         <%} else{ %>
    
         <div>
-        	 <strong>Available Orders to pick:</strong>
-        	<table>
+        	<table class="table">
         	<tbody>
         	<thead>
+	        	<th>Available Orders to pick</th>
 	        	<th></th>
 	        	<th></th>
 	        	<th></th>
@@ -40,24 +40,27 @@
         	 		i++;
         	 		Address address=DBAccess.JAK_SP_GetAddress(order.scheduledAddressId);
         	 		%>
-        	 		<tr><td>Order#<%=i +"  "%></td><td>Order Status: <%=order.orderStatusDescription %></td><td>
+        	 		<tr>
+        	 		<th>Order#<%=order.orderId +"  "%></th>
+        	 		<th>Order Status: <%=order.orderStatusDescription %></th>
+        	 		<th>EstimatedCost: $<%=order.estCostWithoutTax+order.estTax %></th>
+        	 		
+        	 		<td rowSpan="2">
         	 			<% if(order.orderStatusCode.equals("OP")||order.orderStatusCode.equals("PU")){
         	 				%>
         	 				<form ACTION="pickOrder.do" METHOD="POST"> 
         	
 					        	<input type="hidden" id="orderId" name="orderId"value="<%=order.orderId%>"/>
 					        	
-					       			<input type="submit" onClick="" value="Pick Order" class="pick">
+					       			<input type="submit" onClick="" value="Pick Order" class="btn btn-primary">
 					       		</form>
         	 				<%
         	 			}
         	 			
         	 			%>
         	 		</td></tr>
-        	 		<tr><td colSpan="3">Scheduled Date and Time: <%=order.scheduledDateTime %></td></tr>
-        	 		<tr><td colSpan="3">EstimatedCost: $<%=order.estCostWithoutTax+order.estTax %></td></tr>
-        	 		<tr><td colSpan="3">Address:<%=address.address1+" "+address.city+", "+address.state+"-"+address.zip %></td>
-        	 		<%
+        	 <tr><td colSpan="3">Schedule:<%=address.address1+" "+address.city+", "+address.state+"-"+address.zip +" ("+order.scheduledDateTime+")"%></td></tr>
+        	 			<%
         		 	List<OrderItem> orderItems = DBAccess.JAK_SP_GetOrderItems(order.orderId);
         		 	int j=0;
         		 	for( OrderItem item:orderItems){
@@ -69,6 +72,7 @@
         			<td>&nbsp;<%=j %>&nbsp;</td>
         			<td>&nbsp;<%=d.name +" ("+ d.baseUnits + " "+d.unitDescription +")"%>&nbsp;</td>  
         			<td>&nbsp;<%="  $"+d.estCost %>&nbsp;</td>
+        		
         					
         		</tr>
         		<%}
