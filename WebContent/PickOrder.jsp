@@ -13,23 +13,19 @@
  <%!List<Dish> dishes=new ArrayList<Dish>();%>
   <% 
   	User user = (User)session.getAttribute("user");
-  	List<Order> orders=DBAccess.JAK_SP_GetOrders(user.userId, "ALL");
+  	List<Order> orders=DBAccess.JAK_SP_GetOrders(0, "OP");
   		%>
   		 
   		<div class="table-responsive">
         
         <%if (orders==null || orders.size()==0) {%>
-        	<h4>You do not have any orders.</h4>
-        	<%if (user.userTypeCode.equals("USR")) {%>
-        		<a class="btn btn-primary" role="button" href="StartOrder.jsp">Click here to start order.</a>
-     		<%} %>
-     		<%if (user.userTypeCode.equals("CHEF")) {%>
-        		<a class="btn btn-primary" role="button" href="PickOrder.jsp">Click here pick the order.</a>
-     		<%} %>
+        	<h4>Sorry we do not have any orders at the moment</h4>
+        	
+    
         <%} else{ %>
    
         <div>
-        	 <strong>My order items:</strong>
+        	 <strong>Available Orders to pick:</strong>
         	<table>
         	<tbody>
         	<thead>
@@ -47,25 +43,13 @@
         	 		<tr><td>Order#<%=i +"  "%></td><td>Order Status: <%=order.orderStatusDescription %></td><td>
         	 			<% if(order.orderStatusCode.equals("OP")||order.orderStatusCode.equals("PU")){
         	 				%>
-        	 				<form ACTION="cancelOrder.do" METHOD="POST"> 
+        	 				<form ACTION="pickOrder.do" METHOD="POST"> 
         	
 					        	<input type="hidden" id="orderId" name="orderId"value="<%=order.orderId%>"/>
 					        	
-					       			<input type="submit" onClick="" value="Cancel Order" class="cancel">
+					       			<input type="submit" onClick="" value="Pick Order" class="pick">
 					       		</form>
-					       		
-					       		
         	 				<%
-        	 				if(user.userTypeCode.equals("CHEF")&&order.orderStatusCode.equals("PU")){
-        	 					%>
-        	 					<form ACTION="completeOrder.do" METHOD="POST"> 
-        	
-					        	<input type="hidden" id="orderId" name="orderId"value="<%=order.orderId%>"/>
-					        
-					       			<input type="submit" onClick="" value="Complete Order" class="complete">
-					       		</form>
-        	 					<%
-        	 				}
         	 			}
         	 			
         	 			%>

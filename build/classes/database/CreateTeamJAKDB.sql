@@ -367,7 +367,8 @@ BEGIN
         FROM JAK_Order o
         INNER JOIN JAK_SupportCodeLists scl ON scl.CodeType='Order_Status' AND scl.Code=o.orderStatusCode
         WHERE (o.chefId=userIdIn OR o.userId=userIdIn OR userIdIn=0) 
-        AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode);
+        AND (orderStatusCodeIn='ALL' OR orderStatusCodeIn=o.orderStatusCode)
+        AND (orderStatusCode<>'C' AND orderStatusCode<>'IP');
 END$$
 
 CREATE PROCEDURE JAK_SP_GetOrder(
@@ -520,7 +521,8 @@ VALUES
  ('Order_Status','COMP','Completed'),
  ('Order_Status','INV','Invalid'),
  ('Order_Status','IP','In-Progress'),
- ('Order_Status','PU','Picked-Up')
+ ('Order_Status','PU','Picked-Up'),
+ ('Order_Status','C','Cancelled')
  ;
  
 # Create some users now

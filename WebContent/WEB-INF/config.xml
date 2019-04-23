@@ -15,6 +15,12 @@
     	<action path="/cancelOrder"  type="coreservlets.CancelOrder">
       		<forward name="viewMyOrders" path="/ViewMyOrders.jsp"/>
     	</action>
+    	<action path="/completeOrder"  type="coreservlets.CompleteOrder">
+      		<forward name="viewMyOrders" path="/ViewMyOrders.jsp"/>
+    	</action>
+    	<action path="/pickOrder"  type="coreservlets.PickOrder">
+      		<forward name="viewMyOrders" path="/ViewMyOrders.jsp"/>
+    	</action>
     	
     	<action path="/addOrderItem"  type="coreservlets.AddOrderItem">
       		<forward name="startOrder" path="/StartOrder.jsp"/>
